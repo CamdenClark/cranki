@@ -7,8 +7,6 @@ pub mod request;
 pub mod response;
 pub mod routes;
 pub mod user;
-#[cfg(feature = "tls")]
-use self::app_config::{load_ssl, run_tls};
 use self::{config::Config, user::create_auth_db};
 
 use crate::user::{add_user, user_exists};
@@ -56,22 +54,6 @@ async fn main() -> Result<(), ()> {
     if let Some(cmd) = matches.cmd.as_ref() {
         parse_args::manage_user(cmd, &auth_path);
         return Ok(());
-    }
-    #[cfg(feature = "tls")]
-    if cfg!(feature = "tls") {
-        if conf.encryption_enabled() {
-            let tls_conf = match load_ssl(conf.encryption_config().unwrap()) {
-                Ok(c) => c,
-                Err(e) => {
-                    eprintln!("Error while setting up ssl: {}", e);
-                    return Err(());
-                }
-            };
-            run_tls(&conf, tls_conf).await.unwrap();
-            return Ok(());
-        }
-    } else if conf.encryption_enabled() {
-        eprintln!("TLS encryption is enabled but will be ignored as encryption support was not built in the binary.");
     }
     //  set env var max collection upload size
     env::set_var(
